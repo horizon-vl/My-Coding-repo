@@ -22,6 +22,7 @@ public class DeciBin{
                 convert(quo);
             }
         }
+
         void display(){
             System.out.println("Decimal:"+num);
             System.out.println("Binary equivalent:"+bin);
