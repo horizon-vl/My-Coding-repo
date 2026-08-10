@@ -1,4 +1,3 @@
-package smithnum;
 import java.util.*;
 public class smithnum {
     int digitSum(int n) {
