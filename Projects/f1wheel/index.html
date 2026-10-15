@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>F1 Wheel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================
+       Design tokens
+       ========================================================== */
+    :root {
+      /* surfaces */
+      --body: #16181c;
+      --panel: #0c0d10;
+      --edge: #2a2d34;
+
+      /* text */
+      --text: #e8eaee;
+      --dim: #8a8f99;
+
+      /* button / knob colours */
+      --yellow: #ffd21f;
+      --blue: #2f6bff;
+      --teal: #2fc9c0;
+      --purple: #9b5cff;
+      --orange: #ff8a1f;
+      --green: #2fd36b;
+      --pink: #ff3d8b;
+      --red: #ff3b30;
+
+      /* keep content clear of phone notches / bars */
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    /* ==========================================================
+       Base
+       ========================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      background: #050507;
+      color: var(--text);
+      font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+    }
+
+    /* ==========================================================
+       Wheel body (carbon-fibre look) and its two rows
+       ========================================================== */
+    #wheel {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 19% 1fr;
+      gap: 1.2vh;
+      padding: 1.4vh 1.4vw;
+      border: 1px solid var(--edge);
+      border-radius: 7vh;
+      background: repeating-conic-gradient(#1c1f24 0 25%, #16181c 0 50%) 0 0 / 6px 6px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 1fr 2.2fr 1fr;
+      gap: 1.2vw;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 10% 1fr 1.4fr 1fr 10%;   /* brake | left | centre | right | throttle */
+      gap: 1.2vw;
+      min-height: 0;
+    }
+
+    /* ==========================================================
+       Shift paddles
+       ========================================================== */
+    .paddle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--edge);
+      border-radius: 14px 14px 4px 4px;
+      background: linear-gradient(#2b2f36, #14161a);
+      font-size: 3.4vh;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    /* ==========================================================
+       Shift lights + lap info
+       ========================================================== */
+    .leds {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.8vh;
+    }
+
+    .led-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.7vw;
+    }
+
+    .led {
+      width: 3vh;
+      height: 3vh;
+      border: 1px solid #33363d;
+      border-radius: 50%;
+      background: #23262c;
+    }
+
+    .led.g { background: var(--green); }
+    .led.r { background: var(--red); }
+    .led.b { background: var(--blue); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.4vw;
+      color: var(--dim);
+      font-size: 2.3vh;
+    }
+
+    .toolbar button {
+      padding: 0.4vh 1.2vw;
+      border: 1px solid var(--edge);
+      border-radius: 8px;
+      background: #1b1e24;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 2.3vh;
+      font-weight: 700;
+    }
+
+    .status::before {
+      content: "";
+      display: inline-block;
+      width: 1.6vh;
+      height: 1.6vh;
+      margin-right: 0.6vw;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .status.ok::before {
+      background: var(--green);
+    }
+
+    /* ==========================================================
+       Pedals
+       ========================================================== */
+    .pedal {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 1.4vh;
+      overflow: hidden;
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .pedal .fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 0;
+      opacity: 0.85;
+    }
+
+    .pedal.brake .fill    { background: linear-gradient(0deg, #9d1c14, var(--red)); }
+    .pedal.throttle .fill { background: linear-gradient(0deg, #1a8f48, var(--green)); }
+
+    .pedal .percent {
+      position: absolute;
+      top: 1.2vh;
+      width: 100%;
+      text-align: center;
+      color: var(--dim);
+      font-size: 2.2vh;
+    }
+
+    .pedal .name {
+      position: relative;
+      font-size: 3vh;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    /* ==========================================================
+       Side columns (rotary knobs + buttons)
+       ========================================================== */
+    .side {
+      display: grid;
+      grid-auto-rows: 1fr;
+      gap: 0.6vh;
+      min-height: 0;
+    }
+
+    /* ==========================================================
+       Rotary knob
+       ========================================================== */
+    .rotary {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      justify-items: center;
+      min-height: 0;
+    }
+
+    .rotary .label {
+      padding-bottom: 0.4vh;
+      color: var(--dim);
+      font-size: 2.3vh;
+      line-height: 1;
+    }
+
+    .knob {
+      position: relative;
+      height: 100%;
+      aspect-ratio: 1;
+      border: 2px solid #000;
+      border-radius: 50%;
+      outline: 1px solid var(--edge);
+      background: radial-gradient(circle at 50% 40%, #23262c, #0b0c0f 75%);
+      touch-action: none;
+    }
+
+    .knob.active {
+      outline: 2px solid var(--c);
+    }
+
+    /* detent dots around the rim; each .tick is rotated into place by JS */
+    .tick {
+      position: absolute;
+      inset: 0;
+    }
+
+    .tick::before {
+      content: "";
+      position: absolute;
+      top: 3%;
+      left: 50%;
+      width: 6%;
+      height: 6%;
+      margin-left: -3%;
+      border-radius: 50%;
+      background: #4a4f59;
+    }
+
+    .tick.current::before {
+      background: var(--c);
+    }
+
+    /* the coloured cap that rotates */
+    .cap {
+      position: absolute;
+      inset: 20%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, var(--c), color-mix(in srgb, var(--c) 45%, #000));
+      box-shadow: 0 1px 6px #000;
+      transition: transform 0.08s ease-out;
+    }
+
+    .cap::after {
+      content: "";
+      position: absolute;
+      top: 6%;
+      left: 50%;
+      width: 9%;
+      height: 32%;
+      margin-left: -4.5%;
+      border-radius: 3px;
+      background: #0a0a0a;
+    }
+
+    /* current value, drawn over the cap (does not rotate) */
+    .value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0a0a0a;
+      font-size: min(2.8vh, 3.4vw);
+      font-weight: 700;
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.25);
+      pointer-events: none;
+    }
+
+    /* ==========================================================
+       Buttons
+       ========================================================== */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--c, var(--edge));
+      border-radius: 12px;
+      background: #15171b;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 3vh;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.03em;
+    }
+
+    .btn.solid {
+      background: var(--c);
+      color: #0a0a0a;
+    }
+
+    .btn.big {
+      font-size: 5vh;
+      letter-spacing: 0.06em;
+    }
+
+    .btn.wide {
+      grid-column: 1 / -1;
+      font-size: 4vh;
+    }
+
+    /* pressed state, shared by every [data-b] element */
+    [data-b].pressed {
+      transform: scale(0.96);
+      box-shadow: 0 0 18px var(--c, #fff);
+      filter: brightness(1.7);
+    }
+
+    /* ==========================================================
+       Centre: dash screen + DRS / overtake
+       ========================================================== */
+    .centre {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 1vh;
+      min-height: 0;
+    }
+
+    .screen {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 1vw;
+      padding: 1vh 1.2vw;
+      border: 2px solid #000;
+      border-radius: 14px;
+      outline: 1px solid var(--edge);
+      background: #050608;
+    }
+
+    .screen .col {
+      display: grid;
+      gap: 0.6vh;
+      color: var(--dim);
+      font-size: 2.5vh;
+    }
+
+    .screen .col.right {
+      text-align: right;
+    }
+
+    .screen .col b {
+      display: block;
+      color: var(--text);
+      font-size: 3.8vh;
+    }
+
+    .gear {
+      font-size: 17vh;
+      font-weight: 700;
+      line-height: 0.8;
+      text-align: center;
+    }
+
+    .gear small {
+      display: block;
+      color: var(--dim);
+      font-size: 2.5vh;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1.4fr 1fr;
+      gap: 1vh 0.8vw;
+      height: 32vh;
+    }
+
+    /* ==========================================================
+       Overlays: start screen + settings
+       ========================================================== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 5, 7, 0.95);
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .panel {
+      display: grid;
+      gap: 2vh;
+      width: min(80vw, 560px);
+      text-align: center;
+      font-size: 3.4vh;
+    }
+
+    .panel h1 {
+      font-size: 7vh;
+    }
+
+    .panel p {
+      color: var(--dim);
+    }
+
+    .panel .btn {
+      height: 10vh;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center;
+      gap: 1.5vw;
+      text-align: left;
+    }
+
+    .row .num {
+      min-width: 12vw;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .btn.small {
+      width: 10vh;
+      height: 10vh;
+      font-size: 5vh;
+    }
+
+    /* ==========================================================
+       Portrait warning
+       ========================================================== */
+    #rotate-hint {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 10vw;
+      background: #050507;
+      font-size: 5vw;
+      text-align: center;
+    }
+
+    @media (orientation: portrait) {
+      #rotate-hint { display: flex; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="rotate-hint">Rotate your phone to landscape to use the wheel.</div>
+
+  <div id="wheel">
+
+    <!-- Top row: paddles + shift lights -->
+    <div class="top">
+      <div class="paddle" data-b="down">DOWNSHIFT</div>
+
+      <div class="leds">
+        <div class="led-row" id="led-row"></div>
+        <div class="toolbar">
+          <span class="status" id="status">Not connected</span>
+          <button id="calibrate">CALIBRATE</button>
+          <button id="open-settings">SETTINGS</button>
+        </div>
+      </div>
+
+      <div class="paddle" data-b="up">UPSHIFT</div>
+    </div>
+
+    <!-- Main row: brake | left knobs | screen + DRS | right knobs + pit | throttle -->
+    <div class="main">
+
+      <div class="pedal brake" id="brake">
+        <div class="percent">0%</div>
+        <div class="fill"></div>
+        <div class="name">BRAKE</div>
+      </div>
+
+      <!-- knobs are added here by JS (see ROTARIES) -->
+      <div class="side" id="left-column"></div>
+
+      <div class="centre">
+        <div class="screen">
+          <div class="col">
+            <span>Speed<b>287</b></span>
+            <span>Tyre<b>M · 8 laps</b></span>
+          </div>
+
+          <div class="gear">7<small>Gear</small></div>
+
+          <div class="col right">
+            <span>Delta<b style="color: var(--green)">−0.214</b></span>
+            <span>ERS<b>62%</b></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn solid big" style="--c: var(--green)" data-b="drs">DRS</button>
+          <button class="btn solid big" style="--c: var(--pink)" data-b="overtake">OVERTAKE</button>
+          <button class="btn solid wide" style="--c: var(--blue)" data-b="clutch">CLUTCH</button>
+        </div>
+      </div>
+
+      <!-- knobs are inserted above the pit button by JS -->
+      <div class="side" id="right-column">
+        <button class="btn" style="--c: var(--yellow)" data-b="pit">PIT LIMITER</button>
+      </div>
+
+      <div class="pedal throttle" id="throttle">
+        <div class="percent">0%</div>
+        <div class="fill"></div>
+        <div class="name">THROTTLE</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="start" class="overlay">
+    <div class="panel">
+      <h1>F1 Wheel</h1>
+      <p>Hold your phone like a steering wheel. Tap start, hold it straight, then tap CALIBRATE.</p>
+      <button id="start-btn" class="btn solid" style="--c: var(--green)">START</button>
+    </div>
+  </div>
+
+  <div id="settings" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <span>Full lock at</span>
+        <button class="btn small" data-adjust="range" data-dir="-1">−</button>
+        <span class="num" id="range-value"></span>
+        <button class="btn small" data-adjust="range" data-dir="1">+</button>
+      </div>
+      <div class="row">
+        <span>Deadzone</span>
+        <button class="btn small" data-adjust="deadzone" data-dir="-1">−</button>
+        <span class="num" id="deadzone-value"></span>
+        <button class="btn small" data-adjust="deadzone" data-dir="1">+</button>
+      </div>
+      <div class="row">
+        <span>Steering direction</span>
+        <span></span>
+        <button class="btn" id="invert-btn" style="padding: 0 3vw"></button>
+        <span></span>
+      </div>
+      <button id="close-settings" class="btn solid" style="--c: var(--yellow)">DONE</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       Shared state sent to the PC (see main.py)
+       ========================================================== */
+    const controls = { throttle: 0, brake: 0 };   // pedals, 0 to 1
+    const rotaryState = {};                       // knob id -> current detent index
+    let ws = null;
+
+    function send(message) {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
+    }
+
+
+    /* ==========================================================
+       Rotary knobs
+       Edit this list to change labels, colours, or detent values.
+       ========================================================== */
+    const ROTARIES = [
+      { id: 'bias', column: 'left-column',  label: 'Brake bias',        color: 'var(--yellow)', positions: ['52', '54', '56', '58', '60', '62', '64'], start: 2 },
+      { id: 'diff', column: 'left-column',  label: 'Diff on-throttle',  color: 'var(--blue)',   positions: ['50', '60', '70', '80', '90'],             start: 2 },
+      { id: 'eng',  column: 'left-column',  label: 'Engine mode',       color: 'var(--teal)',   positions: ['1', '2', '3', '4', '5', '6', '7', '8'],   start: 4 },
+      { id: 'ersm', column: 'right-column', label: 'ERS mode',          color: 'var(--purple)', positions: ['None', 'Med', 'Hot', 'Ovr'],              start: 1 },
+      { id: 'fuel', column: 'right-column', label: 'Fuel mix',          color: 'var(--orange)', positions: ['Lean', 'Std', 'Rich', 'Max'],             start: 1 },
+    ];
+
+    const KNOB_SWEEP = 270;   // total dial travel in degrees (-135 to +135)
+
+    function createRotary(config) {
+      const { id, column, label, color, positions, start } = config;
+      const steps = positions.length;
+      const degreesPerStep = KNOB_SWEEP / (steps - 1);
+      const angleOf = (index) => -KNOB_SWEEP / 2 + index * degreesPerStep;
+
+      // build the DOM
+      const wrapper = document.createElement('div');
+      wrapper.className = 'rotary';
+      wrapper.style.setProperty('--c', color);
+      wrapper.innerHTML = `
+        <div class="label">${label}</div>
+        <div class="knob">
+          <div class="cap"></div>
+          <div class="value"></div>
+        </div>`;
+
+      const container = document.getElementById(column);
+      container.insertBefore(wrapper, container.querySelector('.btn'));  // buttons stay last
+
+      const knob = wrapper.querySelector('.knob');
+      const cap = knob.querySelector('.cap');
+      const valueLabel = knob.querySelector('.value');
+
+      // one dot per detent
+      const ticks = positions.map((_, index) => {
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        tick.style.transform = `rotate(${angleOf(index)}deg)`;
+        knob.insertBefore(tick, cap);
+        return tick;
+      });
+
+      // move to a detent
+      let current = -1;
+      function select(index, { silent = false } = {}) {
+        if (index === current) return;
+        current = index;
+        cap.style.transform = `rotate(${angleOf(index)}deg)`;
+        valueLabel.textContent = positions[index];
+        ticks.forEach((tick, i) => tick.classList.toggle('current', i === index));
+        rotaryState[id] = index;
+        if (silent) return;
+        if (navigator.vibrate) navigator.vibrate(6);
+        send({ type: 'rot', id, index });
+      }
+
+      // the knob follows the finger's angle, snapping to the nearest detent
+      function selectFromPointer(event) {
+        const box = knob.getBoundingClientRect();
+        const dx = event.clientX - (box.left + box.width / 2);
+        const dy = event.clientY - (box.top + box.height / 2);
+
+        let angle = Math.atan2(dx, -dy) * 180 / Math.PI;   // 0 = straight up, clockwise positive
+        angle = Math.max(-KNOB_SWEEP / 2, Math.min(KNOB_SWEEP / 2, angle));   // dead zone at the bottom
+
+        select(Math.round((angle + KNOB_SWEEP / 2) / degreesPerStep));
+      }
+
+      knob.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        knob.setPointerCapture(event.pointerId);
+        knob.classList.add('active');
+        selectFromPointer(event);
+      });
+
+      knob.addEventListener('pointermove', (event) => {
+        if (knob.hasPointerCapture(event.pointerId)) selectFromPointer(event);
+      });
+
+      const release = () => knob.classList.remove('active');
+      knob.addEventListener('pointerup', release);
+      knob.addEventListener('pointercancel', release);
+
+      select(start, { silent: true });
+    }
+
+    ROTARIES.forEach(createRotary);
+
+
+    /* ==========================================================
+       Shift lights
+       ========================================================== */
+    const LED_COLOURS = ['g', 'r', 'b'];   // 5 green, 5 red, 5 blue
+    const ledRow = document.getElementById('led-row');
+
+    for (let i = 0; i < 15; i++) {
+      const led = document.createElement('div');
+      led.className = 'led';
+      led.dataset.colour = LED_COLOURS[Math.floor(i / 5)];
+      ledRow.appendChild(led);
+    }
+
+    function setLeds(count) {
+      [...ledRow.children].forEach((led, i) => {
+        led.className = 'led' + (i < count ? ' ' + led.dataset.colour : '');
+      });
+    }
+
+    setLeds(9);
+
+
+    /* ==========================================================
+       Buttons and paddles (multi-touch: each element tracks its own finger)
+       ========================================================== */
+    document.querySelectorAll('[data-b]').forEach((element) => {
+      const name = element.dataset.b;
+
+      element.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        element.setPointerCapture(event.pointerId);
+        element.classList.add('pressed');
+        if (navigator.vibrate) navigator.vibrate(8);
+        send({ type: 'btn', name, down: true });
+      });
+
+      const release = () => {
+        element.classList.remove('pressed');
+        send({ type: 'btn', name, down: false });
+      };
+      element.addEventListener('pointerup', release);
+      element.addEventListener('pointercancel', release);
+    });
+
+
+    /* ==========================================================
+       Pedals: vertical touch position = 0 to 100 %
+       ========================================================== */
+    function setupPedal(id, onChange) {
+      const pedal = document.getElementById(id);
+      const fill = pedal.querySelector('.fill');
+      const percent = pedal.querySelector('.percent');
+
+      function update(value) {
+        fill.style.height = (value * 100) + '%';
+        percent.textContent = Math.round(value * 100) + '%';
+        onChange(value);
+      }
+
+      function updateFromPointer(event) {
+        const box = pedal.getBoundingClientRect();
+        const value = 1 - (event.clientY - box.top) / box.height;
+        update(Math.max(0, Math.min(1, value)));
+      }
+
+      pedal.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        pedal.setPointerCapture(event.pointerId);
+        updateFromPointer(event);
+      });
+
+      pedal.addEventListener('pointermove', (event) => {
+        if (pedal.hasPointerCapture(event.pointerId)) updateFromPointer(event);
+      });
+
+      const release = () => update(0);
+      pedal.addEventListener('pointerup', release);
+      pedal.addEventListener('pointercancel', release);
+    }
+
+    setupPedal('brake', (value) => { controls.brake = value; });
+    setupPedal('throttle', (value) => {
+      controls.throttle = value;
+      setLeds(Math.round(4 + value * 11));   // demo: lights follow throttle
+    });
+
+
+
+
+    /* ==========================================================
+       Connection to main.py
+       ========================================================== */
+    function connect() {
+      const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${scheme}://${location.host}/ws`);
+
+      ws.onopen = () => {
+        // tell the PC where every knob sits, so it doesn't press buttons for them
+        for (const [id, index] of Object.entries(rotaryState)) {
+          send({ type: 'rot', id, index, init: true });
+        }
+      };
+      ws.onclose = () => setTimeout(connect, 1000);
+      ws.onerror = () => ws.close();
+    }
+
+
+    /* ==========================================================
+       Settings (saved on this phone)
+       ========================================================== */
+    const LIMITS = { range: [30, 180, 5], deadzone: [0, 10, 1] };   // min, max, step (degrees)
+
+    function loadSettings() {
+      try { return JSON.parse(localStorage.getItem('f1wheel') || '{}'); } catch (e) { return {}; }
+    }
+
+    function saveSettings() {
+      try { localStorage.setItem('f1wheel', JSON.stringify(settings)); } catch (e) { /* ignore */ }
+    }
+
+    const settings = { range: 70, deadzone: 2, invert: false, ...loadSettings() };
+
+    function renderSettings() {
+      document.getElementById('range-value').textContent = settings.range + '°';
+      document.getElementById('deadzone-value').textContent = settings.deadzone + '°';
+      document.getElementById('invert-btn').textContent = settings.invert ? 'REVERSED' : 'NORMAL';
+    }
+
+    document.querySelectorAll('[data-adjust]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.adjust;
+        const [min, max, step] = LIMITS[key];
+        settings[key] = Math.max(min, Math.min(max, settings[key] + step * Number(button.dataset.dir)));
+        saveSettings();
+        renderSettings();
+      });
+    });
+
+    document.getElementById('invert-btn').addEventListener('click', () => {
+      settings.invert = !settings.invert;
+      saveSettings();
+      renderSettings();
+    });
+
+    const settingsOverlay = document.getElementById('settings');
+    document.getElementById('open-settings').addEventListener('click', () => settingsOverlay.classList.remove('hidden'));
+    document.getElementById('close-settings').addEventListener('click', () => settingsOverlay.classList.add('hidden'));
+    renderSettings();
+
+
+    /* ==========================================================
+       Gyro steering: angle of the phone as you turn it like a wheel
+       ========================================================== */
+    let rawAngle = 0;       // degrees, 0 when the phone is upright in landscape
+    let zeroAngle = 0;      // set by CALIBRATE
+    let haveSensor = false;
+
+    function onOrientation(event) {
+      if (event.beta === null || event.gamma === null) return;
+
+      // gravity direction in the phone's x/y plane, from the standard beta/gamma angles
+      const beta = event.beta * Math.PI / 180;
+      const gamma = event.gamma * Math.PI / 180;
+      const gx = -Math.sin(gamma) * Math.cos(beta);
+      const gy = Math.sin(beta);
+
+      const screenAngle = (screen.orientation && screen.orientation.angle) ||
+                          (window.orientation === undefined ? 0 : window.orientation);
+      const flipped = screenAngle === 270 || screenAngle === -90;
+      rawAngle = (flipped ? Math.atan2(-gy, -gx) : Math.atan2(gy, gx)) * 180 / Math.PI;
+
+      if (!haveSensor) zeroAngle = rawAngle;
+      haveSensor = true;
+    }
+
+    const wrap180 = (deg) => ((deg + 540) % 360) - 180;
+
+    function steeringDegrees() {
+      return wrap180(rawAngle - zeroAngle) * (settings.invert ? -1 : 1);
+    }
+
+    function steeringValue() {
+      const degrees = steeringDegrees();
+      const size = Math.abs(degrees);
+      if (size <= settings.deadzone) return 0;
+      const amount = Math.min(1, (size - settings.deadzone) / (settings.range - settings.deadzone));
+      return Math.sign(degrees) * amount;
+    }
+
+    document.getElementById('calibrate').addEventListener('click', () => { zeroAngle = rawAngle; });
+
+
+    /* ==========================================================
+       Send loop: ~60 times a second (also acts as a keep-alive)
+       ========================================================== */
+    const statusEl = document.getElementById('status');
+    let lastMessage = '';
+    let lastSentAt = 0;
+
+    setInterval(() => {
+      const message = JSON.stringify({
+        type: 'axes',
+        steer: Math.round(steeringValue() * 1000) / 1000,
+        throttle: Math.round(controls.throttle * 1000) / 1000,
+        brake: Math.round(controls.brake * 1000) / 1000,
+      });
+      const now = performance.now();
+      if (message !== lastMessage || now - lastSentAt > 100) {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(message);
+        lastMessage = message;
+        lastSentAt = now;
+      }
+
+      const online = ws && ws.readyState === WebSocket.OPEN;
+      const text = !online ? 'Not connected'
+                 : !haveSensor ? 'Connected · no motion data'
+                 : 'Connected · ' + Math.round(steeringDegrees()) + '°';
+      if (statusEl.textContent !== text) statusEl.textContent = text;
+      statusEl.classList.toggle('ok', Boolean(online && haveSensor));
+    }, 1000 / 60);
+
+
+    /* ==========================================================
+       Start button: needs a tap for motion permission (iPhone),
+       fullscreen and keeping the screen awake
+       ========================================================== */
+    let wakeLock = null;
+
+    async function keepAwake() {
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* not supported */ }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && haveSensor) keepAwake();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', async () => {
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const answer = await DeviceOrientationEvent.requestPermission();
+          if (answer !== 'granted') {
+            // carry on anyway: pedals and buttons still work, and the status line
+            // will say "no motion data" until the browser lets sensor events through
+            alert('Motion access was denied, so steering will not work. Allow motion sensors for this site in your browser settings, then reload.');
+          }
+        }
+      } catch (e) { /* ignore, continue without permission prompt */ }
+
+      window.addEventListener('deviceorientation', onOrientation);
+
+      try {
+        await document.documentElement.requestFullscreen();
+        await screen.orientation.lock('landscape');
+      } catch (e) { /* not supported (e.g. iPhone Safari) */ }
+
+      keepAwake();
+      connect();
+      document.getElementById('start').classList.add('hidden');
+    });
+
+
+    /* ==========================================================
+       Block browser gestures
+       ========================================================== */
+    ['gesturestart', 'contextmenu'].forEach((type) => {
+      document.addEventListener(type, (event) => event.preventDefault());
+    });
+  </script>
+</body>
+
+</html>
